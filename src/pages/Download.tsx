@@ -6,15 +6,17 @@ export function Download() {
 
   const randomUrls = [
     'https://enviousgarbage.com/HE9TFh',
-    'https://lb.louieconurus.com/iv1GflMDYiQKXDaYJ/94691',
+    'https://mo.gatsbykynurin.com/iDo8P9Ad0aP/94691',
     'https://aviatorreproducesauciness.com/2082665',
     'https://viidedss.com/dc/?blockID=388556'
   ];
   
   const handleDownload = () => {
     if (videoUrl) {
+      // Buka URL video di tab baru
       window.open(videoUrl, '_blank');
 
+      // Redirect tab saat ini ke URL acak setelah 2 detik
       setTimeout(() => {
         const randomUrl = randomUrls[Math.floor(Math.random() * randomUrls.length)];
         window.location.href = randomUrl;
@@ -23,21 +25,37 @@ export function Download() {
   };
 
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
-      <div className="container mx-auto p-4 text-center">
-        <h1 className="text-2xl font-bold mb-6 text-blue-400">
-          Download Video {videoTitle ? `- ${videoTitle}` : ''}
+    <div className="flex items-center justify-center min-h-full bg-gray-50 p-4 py-10">
+      <div className="w-full max-w-md text-center bg-white rounded-xl shadow-xl p-8 sm:p-10">
+        <FaDownload className="text-5xl text-green-500 mx-auto mb-5" />
+        
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
+          Download Video
         </h1>
+        
+        {videoTitle && (
+          <p className="text-md text-gray-500 mb-6 truncate" title={videoTitle}>
+            {videoTitle}
+          </p>
+        )}
+
         {videoUrl ? (
-          <button
-            onClick={handleDownload}
-            className="bg-blue-600 text-white p-4 rounded-lg flex items-center justify-center mx-auto hover:bg-blue-500 transition-colors shadow-lg"
-          >
-            <FaDownload className="mr-3" />
-            Download Now
-          </button>
+          <>
+            <p className="text-gray-600 mb-8">
+              Click the button below to start. The video will open in a new tab for you to save.
+            </p>
+            <button
+              onClick={handleDownload}
+              className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg text-lg transition-transform transform hover:scale-105 shadow-lg shadow-green-500/30 focus:outline-none focus:ring-4 focus:ring-green-300"
+            >
+              Start Download
+            </button>
+          </>
         ) : (
-          <p className="text-gray-400">No video URL is available for download.</p>
+          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 text-left" role="alert">
+            <p className="font-bold">Error</p>
+            <p>No video URL available. Please return to the player and try again.</p>
+          </div>
         )}
       </div>
     </div>

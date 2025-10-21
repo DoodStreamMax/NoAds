@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upload Multiple Videos - No Ads Stream</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    :root {
+      --primary-color: #3b82f6; --success-color: #22c55e; --danger-color: #ef4444;
+      --gray-bg: #f9fafb; --gray-border: #e5e7eb; --text-dark: #1f2937; --text-light: #6b7280;
+    }
+    body {
+      font-family: 'Inter', sans-serif; background-color: var(--gray-bg); color: var(--text-dark);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 1rem;
+    }
+    .upload-container {
+      background-color: white; border-radius: 0.75rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+      width: 100%; max-width: 600px; padding: 2rem;
+    }
+    h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; text-align: center; }
+
+    #dropZone {
+      border: 2px dashed var(--gray-border); border-radius: 0.5rem; padding: 2rem; cursor: pointer; transition: all 0.2s ease-in-out; text-align: center;
+    }
+    #dropZone.dragover { border-color: var(--primary-color); background-color: #eff6ff; }
+    #dropZone:hover { border-color: #93c5fd; }
+    #dropZone .icon { font-size: 2.5rem; color: var(--primary-color); margin-bottom: 1rem; }
+    #file-instructions { font-weight: 500; color: var(--text-dark); }
+    #file-sub-instructions { color: var(--text-light); font-size: 0.875rem; }
+
+    #fileStatusContainer { margin-top: 1.5rem; max-height: 200px; overflow-y: auto; background-color: #f9fafb; border: 1px solid var(--gray-border); border-radius: 0.5rem; padding: 0.5rem; }
+    .file-status-item { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0.75rem; font-size: 0.875rem; border-bottom: 1px solid var(--gray-border); }
+    .file-status-item:last-child { border-bottom: none; }
+    .file-name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 1rem; }
+    .status-badge { padding: 0.25rem 0.5rem; border-radius: 9999px; font-weight: 600; font-size: 0.75rem; }
+    .status-waiting { background-color: #f3f4f6; color: #4b5563; }
+    .status-uploading { background-color: #e0e7ff; color: #4338ca; }
+    .status-success { background-color: #dcfce7; color: #166534; }
+    .status-failed { background-color: #fee2e2; color: #b91c1c; }
+
+    .btn { width: 100%; padding: 0.75rem 1rem; border-radius: 0.5rem; font-weight: 600; font-size: 1rem; border: none; cursor: pointer; transition: all 0.2s ease; margin-top: 1.5rem; }
+    #uploadButton { background-color: var(--primary-color); color: white; }
+    #uploadButton:hover:not(:disabled) { background-color: #2563eb; }
+    #uploadButton:disabled { background-color: #9ca3af; cursor: not-allowed; }
+
+    #resultContainer { margin-top: 1.5rem; }
+    #resultLinks { width: 100%; height: 120px; border: 1px solid var(--gray-border); border-radius: 0.5rem; padding: 0.75rem; font-family: monospace; font-size: 0.875rem; }
+
+    .alert { padding: 1rem; border-radius: 0.5rem; margin-top: 1.5rem; font-weight: 500; text-align: left; }
+    .alert-success { background-color: #dcfce7; color: #166534; }
+    .alert-danger { background-color: #fee2e2; color: #b91c1c; }
+    .hidden { display: none; }
+    footer { margin-top: 2rem; font-size: 0.875rem; color: var(--text-light); text-align: center; }
+  </style>
+</head>
+<body>
+
+  <div class="upload-container">
+    <h1>Upload Videos</h1>
+
+    <div id="dropZone">
+      <div class="icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+      <p id="file-instructions">Drag & Drop Videos Here</p>
+      <small id="file-sub-instructions">or click to select files</small>
+    </div>
+
+    <input type="file" id="fileInput" class="hidden" accept="video/mp4,video/quicktime" multiple>
+
+    <div id="fileStatusContainer" class="hidden"></div>
+
+    <button id="uploadButton" class="btn" disabled>Upload Videos</button>
+
+    <div class="alert alert-danger hidden" id="mainStatusMessage"></div>
+    <div class="alert alert-success hidden" id="githubSuccessMessage"></div>
+
+    <div id="resultContainer" class="hidden">
+      <p style="font-weight: 600; margin-bottom: 0.5rem;">Generated Links:</p>
+      <textarea id="resultLinks" readonly></textarea>
+    </div>
+  </div>
+
+  <footer class="text-center">
+    <p>© <span id="year"></span> No Ads Stream</p>
+  </footer>
+
+  <script>const _0x2d2471 = _0x7bb4;
+(function (_0x1e7665, _0x2f4bbe) {
+    const _0x1db051 = _0x7bb4, _0x5515b8 = _0x1e7665();
+    while (!![]) {
+        try {
+            const _0x30a712 = parseInt(_0x1db051(0x255)) / (-0x2692 + 0x1 * 0x1b73 + 0x8 * 0x164) + -parseInt(_0x1db051(0x201)) / (-0xf52 + -0x25c4 + 0x3518) * (-parseInt(_0x1db051(0x2d8)) / (0x1 * -0x6f1 + -0x7 * -0x4ae + -0x19ce)) + parseInt(_0x1db051(0x1e6)) / (0x9d7 * -0x2 + -0x12bc + 0x266e) * (parseInt(_0x1db051(0x224)) / (0x2080 + -0x16f9 + -0x982)) + -parseInt(_0x1db051(0x200)) / (0x1 * -0x24f9 + 0x140c + 0x10f3) * (-parseInt(_0x1db051(0x232)) / (-0x18b + -0x1af4 + 0x1c86)) + -parseInt(_0x1db051(0x21d)) / (-0xfe9 + 0x20 * 0xd9 + -0xb2f) + parseInt(_0x1db051(0x24f)) / (-0x1eb7 + 0x712 * 0x2 + 0x109c) + -parseInt(_0x1db051(0x274)) / (0xd3 * -0x2c + -0x910 + -0x16af * -0x2);
+            if (_0x30a712 === _0x2f4bbe)
+                break;
+            else
+                _0x5515b8['push'](_0x5515b8['shift']());
+        } catch (_0x8a562e) {
+            _0x5515b8['push'](_0x5515b8['shift']());
+        }
+    }
+}(_0x309a, -0x9a710 + 0x2a2 * 0x200 + -0x3b * -0x35cb), document[_0x2d2471(0x219) + _0x2d2471(0x281)](_0x2d2471(0x2c1))[_0x2d2471(0x1e7) + 't'] = new Date()[_0x2d2471(0x206) + 'r']());
+const dropZone = document[_0x2d2471(0x219) + _0x2d2471(0x281)](_0x2d2471(0x20f)), fileInput = document[_0x2d2471(0x219) + _0x2d2471(0x281)](_0x2d2471(0x222)), uploadButton = document[_0x2d2471(0x219) + _0x2d2471(0x281)](_0x2d2471(0x210) + 'on'), fileStatusContainer = document[_0x2d2471(0x219) + _0x2d2471(0x281)](_0x2d2471(0x2d0) + _0x2d2471(0x28c)), mainStatusMessage = document[_0x2d2471(0x219) + _0x2d2471(0x281)](_0x2d2471(0x2a1) + _0x2d2471(0x2b5)), githubSuccessMessage = document[_0x2d2471(0x219) + _0x2d2471(0x281)](_0x2d2471(0x25f) + _0x2d2471(0x2b3)), resultContainer = document[_0x2d2471(0x219) + _0x2d2471(0x281)](_0x2d2471(0x280) + _0x2d2471(0x226)), resultLinks = document[_0x2d2471(0x219) + _0x2d2471(0x281)](_0x2d2471(0x2b2) + 's');
+function _0x309a() {
+    const _0x14ff6c = [
+        'were\x20uploa',
+        'sha',
+        'gungDevlop',
+        'status-bad',
+        'e\x20files.',
+        'Bearer\x20',
+        'update\x20JSO',
+        'dropZone',
+        'uploadButt',
+        'Upload\x20fai',
+        'uNDFX',
+        'wHyRt',
+        'dey.co/api',
+        'MtWxz',
+        'https://cd',
+        'base:\x20',
+        'ailed\x20to\x20u',
+        'getElement',
+        'an\x20id=\x22sta',
+        'xiXlS',
+        'ghp_AgTXch',
+        '196808wZIzDn',
+        'vjBCx',
+        'push',
+        'uLdMM',
+        'parse',
+        'fileInput',
+        'className',
+        '15bxxOzI',
+        'from',
+        'ainer',
+        'classList',
+        'error',
+        'message',
+        'HhjUg',
+        'ded\x20',
+        '✅\x20Successf',
+        'MTurm',
+        'to\x20server.',
+        'zrvja',
+        '\x20video(s)\x20',
+        'ent',
+        '35ndzLNB',
+        'POST',
+        'XYvuB',
+        'i.github.c',
+        'GitHub\x20Upd',
+        '.\x20Some\x20fil',
+        'me\x22>',
+        'PquNC',
+        'createElem',
+        'Failed\x20to\x20',
+        '\x20uploaded.',
+        'e\x20status-w',
+        'Uploading\x20',
+        'eos',
+        'oose\x20MP4\x20o',
+        'n.videy.co',
+        'PSaEC',
+        'ect\x20files\x20',
+        '\x20have\x20been',
+        'failed',
+        'again.',
+        'pload\x20proc',
+        'hidden',
+        'pdate\x20data',
+        'ccurred\x20du',
+        'filter',
+        'addEventLi',
+        's=\x22file-na',
+        'dataTransf',
+        '1167030ByATvJ',
+        'An\x20error\x20o',
+        'tatus-badg',
+        'r\x20QuickTim',
+        'statusText',
+        'dragover',
+        '421065KJozSR',
+        'Retry\x20Uplo',
+        'UtGRG',
+        'add',
+        '\x22\x20class=\x22s',
+        'change',
+        'Process\x20fa',
+        'stringify',
+        'GitHub\x20API',
+        '/Viral/con',
+        'githubSucc',
+        'Upload\x20Vid',
+        'sVuRU',
+        'tus-',
+        'YHLGP',
+        'remove',
+        'GxWHq',
+        'tream/v/?v',
+        'NDuRb',
+        'oMmQA',
+        'Invalid\x20se',
+        's-item',
+        'om/repos/A',
+        'Add\x20',
+        '/upload',
+        'JLVUC',
+        'map',
+        'ate\x20Error:',
+        'Retry\x20Push',
+        'EbyAp',
+        'Please\x20sel',
+        '8058270AJEKHW',
+        'success',
+        'Upload\x20Mor',
+        'ading\x20',
+        'd\x20the\x20data',
+        'ring\x20the\x20u',
+        'iting</spa',
+        'to\x20upload.',
+        'ASfaX',
+        'teJEs',
+        'e\x20and\x20try\x20',
+        'substr',
+        'resultCont',
+        'ById',
+        'FLKjS',
+        'Hzxie',
+        'oWzwT',
+        'mTOvq',
+        '</span><sp',
+        'iled:\x20',
+        'file',
+        'alert\x20aler',
+        'startsWith',
+        'div',
+        'Container',
+        'xpmCZ',
+        'forEach',
+        'tatus\x20abov',
+        'ajax',
+        'all',
+        'rver\x20respo',
+        'tLDvY',
+        'value',
+        'files',
+        'innerText',
+        '\x20new\x20video',
+        '\x20Video(s)',
+        'appendChil',
+        '\x20database.',
+        'PoFmO',
+        'ZpgsD',
+        'onclick',
+        'DKmZW',
+        'sBRjm',
+        'No\x20valid\x20v',
+        'mainStatus',
+        'base.',
+        'OKYYW',
+        'uMJCQ',
+        'XpckH',
+        'lSxDV',
+        'e\x20Videos',
+        'uploading',
+        'puJih',
+        'video/',
+        'replace',
+        'DSHQk',
+        'type',
+        'SXwiV',
+        'title',
+        'length',
+        '<span\x20clas',
+        'resultLink',
+        'essMessage',
+        'aiting\x22>Wa',
+        'Message',
+        'ess:',
+        'ault',
+        'name',
+        '\x20Please\x20ch',
+        'xtvrs',
+        'MrJbO',
+        'stener',
+        'huAsI',
+        'view\x20the\x20s',
+        'All\x20files\x20',
+        '.mp4',
+        'year',
+        'append',
+        'npaiklan.s',
+        'toString',
+        'drop',
+        'and\x20update',
+        'led\x20for\x20',
+        'TZFxK',
+        'Success',
+        'bqJiK',
+        'nzkzn',
+        'nbcqs',
+        '\x20Please\x20re',
+        'status-',
+        'join',
+        'fileStatus',
+        'ded,\x20but\x20f',
+        'random',
+        'danger',
+        'ZECmo',
+        'abase',
+        'json',
+        'es\x20may\x20not',
+        '69JNOMXU',
+        'PUT',
+        'JiwXi2blBW',
+        'o.json',
+        'Failed',
+        'ideo\x20files',
+        'vkjKg',
+        '289588hcBVvT',
+        'textConten',
+        'ully\x20uploa',
+        'dragleave',
+        'yqsMI',
+        'content',
+        'nse\x20for\x20',
+        'https://vi',
+        'click',
+        '\x20selected.',
+        'preventDef',
+        'tents/Vide',
+        'innerHTML',
+        'file-statu',
+        'applicatio',
+        'wXgfq',
+        'ge\x20status-',
+        'n/json',
+        'brvzY',
+        '6ejxZGhaOw',
+        '\x20error:\x20',
+        'disabled',
+        'https://ap',
+        'https://ta',
+        'jbbV3CNbzX',
+        'ing\x20to\x20Dat',
+        '31296ZwmGEx',
+        '48818nlTjoq',
+        'N\x20on\x20GitHu',
+        'Uploading.',
+        'Upload\x20',
+        'Pushing\x20to',
+        'getFullYea',
+        'RRJVU'
+    ];
+    _0x309a = function () {
+        return _0x14ff6c;
+    };
+    return _0x309a();
+}
+let selectedFiles = [];
+function resetUI() {
+    const _0x1d6256 = _0x2d2471, _0x31e5c2 = {
+            'NDuRb': _0x1d6256(0x248),
+            'UtGRG': _0x1d6256(0x260) + _0x1d6256(0x23f)
+        };
+    mainStatusMessage[_0x1d6256(0x227)][_0x1d6256(0x258)](_0x31e5c2[_0x1d6256(0x267)]), githubSuccessMessage[_0x1d6256(0x227)][_0x1d6256(0x258)](_0x31e5c2[_0x1d6256(0x267)]), resultContainer[_0x1d6256(0x227)][_0x1d6256(0x258)](_0x31e5c2[_0x1d6256(0x267)]), fileStatusContainer[_0x1d6256(0x227)][_0x1d6256(0x258)](_0x31e5c2[_0x1d6256(0x267)]), fileStatusContainer[_0x1d6256(0x1f2)] = '', uploadButton[_0x1d6256(0x1fb)] = !(-0x4a3 + -0x1da1 + 0x2244), uploadButton[_0x1d6256(0x296)] = _0x31e5c2[_0x1d6256(0x257)], fileInput[_0x1d6256(0x294)] = '', selectedFiles = [];
+}
+function handleFileSelect(_0x5008d0) {
+    const _0x3b0c70 = _0x2d2471, _0x5491ea = {
+            'PSaEC': _0x3b0c70(0x28b),
+            'MrJbO': _0x3b0c70(0x1f3) + _0x3b0c70(0x26a),
+            'PoFmO': function (_0x492f5e) {
+                return _0x492f5e();
+            },
+            'JLVUC': function (_0x2be9c2, _0x1b636d) {
+                return _0x2be9c2 !== _0x1b636d;
+            },
+            'uLdMM': _0x3b0c70(0x248),
+            'mTOvq': function (_0x539614, _0xea0a8) {
+                return _0x539614(_0xea0a8);
+            },
+            'RRJVU': _0x3b0c70(0x2a0) + _0x3b0c70(0x1e4) + _0x3b0c70(0x1ef) + _0x3b0c70(0x2b9) + _0x3b0c70(0x240) + _0x3b0c70(0x252) + _0x3b0c70(0x20c)
+        };
+    _0x5491ea[_0x3b0c70(0x29b)](resetUI), selectedFiles = Array[_0x3b0c70(0x225)](_0x5008d0)[_0x3b0c70(0x24b)](_0x4e4ee5 => _0x4e4ee5[_0x3b0c70(0x2ad)][_0x3b0c70(0x28a)](_0x3b0c70(0x2aa))), _0x5491ea[_0x3b0c70(0x26e)](-0x91d + -0xd * 0x20f + 0x23e0, selectedFiles[_0x3b0c70(0x2b0)]) ? (fileStatusContainer[_0x3b0c70(0x227)][_0x3b0c70(0x264)](_0x5491ea[_0x3b0c70(0x220)]), selectedFiles[_0x3b0c70(0x28e)](_0x5c07c0 => {
+        const _0x5449e9 = _0x3b0c70, _0x36bcb6 = document[_0x5449e9(0x23a) + _0x5449e9(0x231)](_0x5491ea[_0x5449e9(0x242)]);
+        _0x36bcb6[_0x5449e9(0x223)] = _0x5491ea[_0x5449e9(0x2bb)], _0x36bcb6[_0x5449e9(0x1f2)] = _0x5449e9(0x2b1) + _0x5449e9(0x24d) + _0x5449e9(0x238) + _0x5c07c0[_0x5449e9(0x2b8)] + (_0x5449e9(0x286) + _0x5449e9(0x21a) + _0x5449e9(0x262)) + _0x5c07c0[_0x5449e9(0x2b8)][_0x5449e9(0x2ab)](/[^a-zA-Z0-9]/g, '') + (_0x5449e9(0x259) + _0x5449e9(0x251) + _0x5449e9(0x23d) + _0x5449e9(0x2b4) + _0x5449e9(0x27a) + 'n>'), fileStatusContainer[_0x5449e9(0x299) + 'd'](_0x36bcb6);
+    }), uploadButton[_0x3b0c70(0x1fb)] = !(0x1bf2 * -0x1 + 0x9f6 + 0x11fd), uploadButton[_0x3b0c70(0x296)] = _0x3b0c70(0x204) + selectedFiles[_0x3b0c70(0x2b0)] + _0x3b0c70(0x298)) : _0x5491ea[_0x3b0c70(0x285)](showMainStatus, _0x5491ea[_0x3b0c70(0x207)]);
+}
+function showMainStatus(_0x25d1f5, _0x1cbcfb = _0x2d2471(0x2d3)) {
+    const _0x14f2c6 = _0x2d2471, _0x30cc19 = { 'oWzwT': _0x14f2c6(0x248) };
+    mainStatusMessage[_0x14f2c6(0x296)] = _0x25d1f5, mainStatusMessage[_0x14f2c6(0x223)] = _0x14f2c6(0x289) + 't-' + _0x1cbcfb, mainStatusMessage[_0x14f2c6(0x227)][_0x14f2c6(0x264)](_0x30cc19[_0x14f2c6(0x284)]);
+}
+function generateRandomId() {
+    const _0x105c04 = _0x2d2471;
+    return Math[_0x105c04(0x2d2)]()[_0x105c04(0x2c4)](0x1 * 0x2432 + 0x1f33 + 0x779 * -0x9)[_0x105c04(0x27f)](0x1d75 + -0x9 * -0x1a5 + -0xc0 * 0x3b, -0xb * -0x15 + 0xa3 * -0x1d + 0x119a);
+}
+function uploadSingleFile(_0x16b76b) {
+    const _0xfc2a91 = _0x2d2471, _0x30476d = {
+            'oMmQA': _0xfc2a91(0x2c9),
+            'XpckH': _0xfc2a91(0x20b) + _0xfc2a91(0x1f6) + _0xfc2a91(0x275),
+            'PquNC': function (_0x5c82ab) {
+                return _0x5c82ab();
+            },
+            'sVuRU': function (_0x28fc71, _0x568bdb) {
+                return _0x28fc71(_0x568bdb);
+            },
+            'vjBCx': _0xfc2a91(0x1e3),
+            'wXgfq': _0xfc2a91(0x20b) + _0xfc2a91(0x1f6) + _0xfc2a91(0x245),
+            'puJih': _0xfc2a91(0x203) + '..',
+            'teJEs': _0xfc2a91(0x20b) + _0xfc2a91(0x1f6) + _0xfc2a91(0x2a8),
+            'GxWHq': _0xfc2a91(0x288),
+            'TZFxK': _0xfc2a91(0x2af),
+            'wHyRt': _0xfc2a91(0x1ed) + _0xfc2a91(0x214) + _0xfc2a91(0x26d),
+            'uMJCQ': _0xfc2a91(0x233)
+        };
+    return new Promise((_0x284988, _0xc29871) => {
+        const _0xea477d = _0xfc2a91, _0x9ff778 = {
+                'Hzxie': _0x30476d[_0xea477d(0x268)],
+                'xtvrs': _0x30476d[_0xea477d(0x2a5)],
+                'MTurm': function (_0x2a6eab) {
+                    const _0x5ca30a = _0xea477d;
+                    return _0x30476d[_0x5ca30a(0x239)](_0x2a6eab);
+                },
+                'vkjKg': function (_0x1bc494, _0x1c674c) {
+                    const _0x2be766 = _0xea477d;
+                    return _0x30476d[_0x2be766(0x261)](_0x1bc494, _0x1c674c);
+                },
+                'uNDFX': _0x30476d[_0xea477d(0x21e)],
+                'EbyAp': _0x30476d[_0xea477d(0x1f5)]
+            }, _0x94e4c0 = _0x16b76b[_0xea477d(0x2b8)], _0x93f931 = _0x94e4c0[_0xea477d(0x2ab)](/\.[^/.]+$/, ''), _0x277d27 = _0x94e4c0[_0xea477d(0x2ab)](/[^a-zA-Z0-9]/g, ''), _0x146833 = document[_0xea477d(0x219) + _0xea477d(0x281)](_0xea477d(0x2ce) + _0x277d27);
+        _0x146833[_0xea477d(0x1e7) + 't'] = _0x30476d[_0xea477d(0x2a9)], _0x146833[_0xea477d(0x223)] = _0x30476d[_0xea477d(0x27d)];
+        const _0x2fb324 = new FormData();
+        _0x2fb324[_0xea477d(0x2c2)](_0x30476d[_0xea477d(0x265)], _0x16b76b), _0x2fb324[_0xea477d(0x2c2)](_0x30476d[_0xea477d(0x2c8)], _0x93f931), $[_0xea477d(0x290)]({
+            'url': _0x30476d[_0xea477d(0x213)],
+            'type': _0x30476d[_0xea477d(0x2a4)],
+            'data': _0x2fb324,
+            'contentType': !(-0xe05 * -0x2 + -0x2576 + 0x7f * 0x13),
+            'processData': !(0x1f25 + 0xa9 * -0x33 + -0x1 * -0x287),
+            'success': function (_0x44231f) {
+                const _0x23e77b = _0xea477d;
+                if (_0x44231f['id']) {
+                    _0x146833[_0x23e77b(0x1e7) + 't'] = _0x9ff778[_0x23e77b(0x283)], _0x146833[_0x23e77b(0x223)] = _0x9ff778[_0x23e77b(0x2ba)];
+                    const _0x3823f8 = _0x9ff778[_0x23e77b(0x22d)](generateRandomId), _0x13573c = _0x23e77b(0x216) + _0x23e77b(0x241) + '/' + _0x44231f['id'] + _0x23e77b(0x2c0);
+                    _0x9ff778[_0x23e77b(0x1e5)](_0x284988, {
+                        'Judul': _0x93f931,
+                        'Url': _0x13573c,
+                        'id': _0x3823f8
+                    });
+                } else
+                    _0x9ff778[_0x23e77b(0x1e5)](_0xc29871, _0x23e77b(0x269) + _0x23e77b(0x292) + _0x23e77b(0x1ec) + _0x94e4c0);
+            },
+            'error': function (_0x4df034) {
+                const _0x175ff5 = _0xea477d;
+                _0x146833[_0x175ff5(0x1e7) + 't'] = _0x9ff778[_0x175ff5(0x212)], _0x146833[_0x175ff5(0x223)] = _0x9ff778[_0x175ff5(0x272)], _0x9ff778[_0x175ff5(0x1e5)](_0xc29871, _0x175ff5(0x211) + _0x175ff5(0x2c7) + _0x94e4c0);
+            }
+        });
+    });
+}
+async function processUploadQueue() {
+    const _0x2205d4 = _0x2d2471, _0x42e348 = {
+            'DSHQk': function (_0x1915e6, _0x1c7122) {
+                return _0x1915e6 === _0x1c7122;
+            },
+            'OKYYW': function (_0x5ae902, _0xddc3f9) {
+                return _0x5ae902(_0xddc3f9);
+            },
+            'nbcqs': _0x2205d4(0x273) + _0x2205d4(0x243) + _0x2205d4(0x27b),
+            'brvzY': _0x2205d4(0x248),
+            'yqsMI': _0x2205d4(0x23e) + _0x2205d4(0x22e) + '..',
+            'ASfaX': _0x2205d4(0x205) + _0x2205d4(0x29a) + '..',
+            'SXwiV': function (_0x39df6a, _0x1c0a9d) {
+                return _0x39df6a(_0x1c0a9d);
+            },
+            'HhjUg': _0x2205d4(0x250) + _0x2205d4(0x24a) + _0x2205d4(0x279) + _0x2205d4(0x247) + _0x2205d4(0x2b6),
+            'ZpgsD': function (_0x17f015, _0x301d50) {
+                return _0x17f015(_0x301d50);
+            }
+        };
+    if (_0x42e348[_0x2205d4(0x2ac)](0x2331 + -0x1d3 * 0xc + -0xd4d, selectedFiles[_0x2205d4(0x2b0)]))
+        return void _0x42e348[_0x2205d4(0x2a3)](showMainStatus, _0x42e348[_0x2205d4(0x2cc)]);
+    uploadButton[_0x2205d4(0x1fb)] = !(-0x1 * 0xc62 + 0x5de * -0x2 + 0x181e), mainStatusMessage[_0x2205d4(0x227)][_0x2205d4(0x258)](_0x42e348[_0x2205d4(0x1f8)]), githubSuccessMessage[_0x2205d4(0x227)][_0x2205d4(0x258)](_0x42e348[_0x2205d4(0x1f8)]);
+    const _0x52481c = selectedFiles[_0x2205d4(0x26f)](_0x20bdd2 => uploadSingleFile(_0x20bdd2));
+    try {
+        uploadButton[_0x2205d4(0x296)] = _0x42e348[_0x2205d4(0x1ea)];
+        const _0x318bb1 = await Promise[_0x2205d4(0x291)](_0x52481c);
+        uploadButton[_0x2205d4(0x296)] = _0x42e348[_0x2205d4(0x27c)], await _0x42e348[_0x2205d4(0x2ae)](pushToGitHub, _0x318bb1);
+    } catch (_0x229392) {
+        console[_0x2205d4(0x228)](_0x42e348[_0x2205d4(0x22a)], _0x229392), _0x42e348[_0x2205d4(0x29c)](showMainStatus, _0x2205d4(0x25b) + _0x2205d4(0x287) + _0x229392 + (_0x2205d4(0x237) + _0x2205d4(0x2d7) + _0x2205d4(0x244) + _0x2205d4(0x23c) + _0x2205d4(0x2cd) + _0x2205d4(0x2be) + _0x2205d4(0x28f) + _0x2205d4(0x27e) + _0x2205d4(0x246))), uploadButton[_0x2205d4(0x1fb)] = !(0x2481 + 0x1c38 + 0x4 * -0x102e), uploadButton[_0x2205d4(0x296)] = _0x2205d4(0x256) + _0x2205d4(0x277) + selectedFiles[_0x2205d4(0x2b0)] + _0x2205d4(0x298);
+    }
+}
+async function pushToGitHub(_0x5d753e) {
+    const _0x284ed7 = _0x2d2471, _0x19f140 = {
+            'YHLGP': _0x284ed7(0x21c) + _0x284ed7(0x2da) + _0x284ed7(0x1f9) + _0x284ed7(0x1fe),
+            'nzkzn': _0x284ed7(0x1fc) + _0x284ed7(0x235) + _0x284ed7(0x26b) + _0x284ed7(0x20a) + _0x284ed7(0x25e) + _0x284ed7(0x1f1) + _0x284ed7(0x2db),
+            'lSxDV': function (_0x47effb, _0x57dcc9, _0x65fcba) {
+                return _0x47effb(_0x57dcc9, _0x65fcba);
+            },
+            'tLDvY': function (_0x571798, _0x25af29) {
+                return _0x571798(_0x25af29);
+            },
+            'sBRjm': function (_0x501082, _0x1cc3d6, _0x3ba3f8) {
+                return _0x501082(_0x1cc3d6, _0x3ba3f8);
+            },
+            'bqJiK': _0x284ed7(0x2d9),
+            'XYvuB': _0x284ed7(0x1f4) + _0x284ed7(0x1f7),
+            'FLKjS': _0x284ed7(0x248),
+            'MtWxz': _0x284ed7(0x276) + _0x284ed7(0x2a7),
+            'DKmZW': _0x284ed7(0x23b) + _0x284ed7(0x20e) + _0x284ed7(0x202) + 'b:',
+            'ZECmo': _0x284ed7(0x271) + _0x284ed7(0x1ff) + _0x284ed7(0x2d5)
+        }, _0x48868f = _0x19f140[_0x284ed7(0x263)], _0x5e43cf = _0x19f140[_0x284ed7(0x2cb)];
+    try {
+        const _0x52b1fa = await _0x19f140[_0x284ed7(0x2a6)](fetch, _0x5e43cf, { 'headers': { 'Authorization': _0x284ed7(0x20d) + _0x48868f } });
+        if (!_0x52b1fa['ok'])
+            throw new Error(_0x284ed7(0x25d) + _0x284ed7(0x1fa) + _0x52b1fa[_0x284ed7(0x253)]);
+        const _0x1b8863 = await _0x52b1fa[_0x284ed7(0x2d6)]();
+        let _0x472fec = _0x1b8863[_0x284ed7(0x1eb)] ? JSON[_0x284ed7(0x221)](_0x19f140[_0x284ed7(0x293)](atob, _0x1b8863[_0x284ed7(0x1eb)])) : [];
+        _0x472fec[_0x284ed7(0x21f)](..._0x5d753e);
+        const _0x97fa4f = await _0x19f140[_0x284ed7(0x29f)](fetch, _0x5e43cf, {
+            'method': _0x19f140[_0x284ed7(0x2ca)],
+            'headers': {
+                'Authorization': _0x284ed7(0x20d) + _0x48868f,
+                'Content-Type': _0x19f140[_0x284ed7(0x234)]
+            },
+            'body': JSON[_0x284ed7(0x25c)]({
+                'message': _0x284ed7(0x26c) + _0x5d753e[_0x284ed7(0x2b0)] + (_0x284ed7(0x297) + 's'),
+                'content': _0x19f140[_0x284ed7(0x293)](btoa, JSON[_0x284ed7(0x25c)](_0x472fec, null, 0x2029 + -0x824 * 0x3 + -0x7bb)),
+                'sha': _0x1b8863[_0x284ed7(0x209)]
+            })
+        });
+        if (!_0x97fa4f['ok'])
+            throw new Error(_0x284ed7(0x236) + _0x284ed7(0x270) + '\x20' + _0x97fa4f[_0x284ed7(0x253)]);
+        githubSuccessMessage[_0x284ed7(0x296)] = _0x284ed7(0x22c) + _0x284ed7(0x1e8) + _0x284ed7(0x22b) + _0x5d753e[_0x284ed7(0x2b0)] + (_0x284ed7(0x230) + _0x284ed7(0x2c6) + _0x284ed7(0x278) + _0x284ed7(0x2a2)), githubSuccessMessage[_0x284ed7(0x227)][_0x284ed7(0x264)](_0x19f140[_0x284ed7(0x282)]);
+        const _0x3faeab = _0x5d753e[_0x284ed7(0x26f)](_0x17d284 => _0x284ed7(0x1fd) + _0x284ed7(0x2c3) + _0x284ed7(0x266) + '=' + _0x17d284['id'])[_0x284ed7(0x2cf)]('\x0a');
+        resultLinks[_0x284ed7(0x294)] = _0x3faeab, resultContainer[_0x284ed7(0x227)][_0x284ed7(0x264)](_0x19f140[_0x284ed7(0x282)]), uploadButton[_0x284ed7(0x296)] = _0x19f140[_0x284ed7(0x215)], uploadButton[_0x284ed7(0x1fb)] = !(-0x10e + 0xd * -0x47 + 0x4aa), uploadButton[_0x284ed7(0x29d)] = () => resetUI();
+    } catch (_0x4b035e) {
+        console[_0x284ed7(0x228)](_0x19f140[_0x284ed7(0x29e)], _0x4b035e), _0x19f140[_0x284ed7(0x293)](showMainStatus, _0x284ed7(0x2bf) + _0x284ed7(0x208) + _0x284ed7(0x2d1) + _0x284ed7(0x218) + _0x284ed7(0x249) + _0x284ed7(0x217) + _0x4b035e[_0x284ed7(0x229)]), uploadButton[_0x284ed7(0x1fb)] = !(0x176f * -0x1 + -0x1adb + 0x324b), uploadButton[_0x284ed7(0x296)] = _0x19f140[_0x284ed7(0x2d4)], uploadButton[_0x284ed7(0x29d)] = () => pushToGitHub(_0x5d753e);
+    }
+}
+function _0x7bb4(_0x4ae684, _0x2edcc2) {
+    const _0x471124 = _0x309a();
+    return _0x7bb4 = function (_0x38ccc9, _0x42730e) {
+        _0x38ccc9 = _0x38ccc9 - (-0x2d6 * 0x6 + 0xadc + 0x1 * 0x80b);
+        let _0x533bed = _0x471124[_0x38ccc9];
+        return _0x533bed;
+    }, _0x7bb4(_0x4ae684, _0x2edcc2);
+}
+dropZone[_0x2d2471(0x24c) + _0x2d2471(0x2bc)](_0x2d2471(0x1ee), () => fileInput[_0x2d2471(0x1ee)]()), dropZone[_0x2d2471(0x24c) + _0x2d2471(0x2bc)](_0x2d2471(0x254), _0x5f0b2c => {
+    const _0x4a9fa3 = _0x2d2471, _0x4064cd = { 'huAsI': _0x4a9fa3(0x254) };
+    _0x5f0b2c[_0x4a9fa3(0x1f0) + _0x4a9fa3(0x2b7)](), dropZone[_0x4a9fa3(0x227)][_0x4a9fa3(0x258)](_0x4064cd[_0x4a9fa3(0x2bd)]);
+}), dropZone[_0x2d2471(0x24c) + _0x2d2471(0x2bc)](_0x2d2471(0x1e9), () => dropZone[_0x2d2471(0x227)][_0x2d2471(0x264)](_0x2d2471(0x254))), dropZone[_0x2d2471(0x24c) + _0x2d2471(0x2bc)](_0x2d2471(0x2c5), _0x18bdec => {
+    const _0xf4a389 = _0x2d2471, _0x5a2b38 = {
+            'xpmCZ': _0xf4a389(0x254),
+            'xiXlS': function (_0x4520b5, _0x1865e3) {
+                return _0x4520b5 > _0x1865e3;
+            },
+            'zrvja': function (_0x1dc367, _0x53e555) {
+                return _0x1dc367(_0x53e555);
+            }
+        };
+    _0x18bdec[_0xf4a389(0x1f0) + _0xf4a389(0x2b7)](), dropZone[_0xf4a389(0x227)][_0xf4a389(0x264)](_0x5a2b38[_0xf4a389(0x28d)]), _0x5a2b38[_0xf4a389(0x21b)](_0x18bdec[_0xf4a389(0x24e) + 'er'][_0xf4a389(0x295)][_0xf4a389(0x2b0)], 0x23de + 0xb03 + -0x2ee1) && _0x5a2b38[_0xf4a389(0x22f)](handleFileSelect, _0x18bdec[_0xf4a389(0x24e) + 'er'][_0xf4a389(0x295)]);
+}), fileInput[_0x2d2471(0x24c) + _0x2d2471(0x2bc)](_0x2d2471(0x25a), () => handleFileSelect(fileInput[_0x2d2471(0x295)])), uploadButton[_0x2d2471(0x24c) + _0x2d2471(0x2bc)](_0x2d2471(0x1ee), () => processUploadQueue());</script>
+</body>
+</html>

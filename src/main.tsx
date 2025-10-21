@@ -1,5 +1,3 @@
-// src/main.tsx
-
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App.tsx";
@@ -10,7 +8,7 @@ import { Contact } from "./pages/Contact.tsx";
 import { PlayVideo } from "./pages/PlayVideo.tsx";
 import { Download } from "./pages/Download.tsx";
 import Redirect from "./pages/Redirect.tsx";
-import { Home } from "./pages/Home.tsx"; // Impor komponen Home yang baru
+import { VerifLink } from "./pages/VerifLink.tsx";
 
 const router = createBrowserRouter([
   {
@@ -18,51 +16,47 @@ const router = createBrowserRouter([
     element: <App />,
     children: [
       {
-        index: true,
-        element: <Home />,
-      },
-      { 
-        path: "search",
-        element: <PlayVideo /> 
-      },
-      {
-        path: ":id", // Rute dinamis berdasarkan ID
+        path: ":id",
         element: <PlayVideo />,
       },
       {
-        path: "e/:id", // Rute baru untuk format `/e/:id`
+        path: "e/:id",
         element: <PlayVideo />,
       },
       {
-        path: "d/:id", // Rute baru untuk format `/e/:id`
+        path: "d/:id",
         element: <PlayVideo />,
       },
       {
-        path: "v/:id", // Rute baru untuk format `/e/:id`
+        path: "v/:id",
         element: <PlayVideo />,
       },
       {
-        path: "f/:id", // Rute baru untuk format `/e/:id`
+        path: "v/",
+        element: <VerifLink />,
+      },
+      {
+        path: "f/:id",
         element: <PlayVideo />,
       },
       {
-        path: "play/:id", // Rute baru untuk format `/e/:id`
+        path: "play/:id",
         element: <PlayVideo />,
       },
       {
-        path: "view/:id", // Rute baru untuk format `/e/:id`
+        path: "view/:id",
         element: <PlayVideo />,
       },
       {
-        path: "share/:id", // Rute baru untuk format `/e/:id`
+        path: "share/:id",
         element: <PlayVideo />,
       },
       {
-        path: "download", // Rute untuk halaman Download
+        path: "download",
         element: <Download />,
       },
       {
-        path: "contact", // Rute untuk halaman Contact
+        path: "contact",
         element: <Contact />,
       },
       {

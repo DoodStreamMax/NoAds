@@ -1,353 +1,212 @@
-import { useEffect, useState, useRef } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { FaCopy, FaDownload, FaPlay, FaExclamationTriangle, FaSpinner } from 'react-icons/fa';
-import { useLayout } from '../context/LayoutContext'; // Import hook
+import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { FaCopy, FaDownload, FaStar, FaStarHalfAlt, FaRegStar, FaEye, FaSpinner } from 'react-icons/fa';
+
+const fakeStatsData = [
+  { views: '2.1M', rating: 4.8 },
+  { views: '876K', rating: 4.5 },
+  { views: '1.5M', rating: 4.7 },
+  { views: '452K', rating: 4.3 },
+  { views: '3.2M', rating: 4.9 },
+  { views: '981K', rating: 4.6 },
+  { views: '1.9M', rating: 4.8 },
+  { views: '623K', rating: 4.4 },
+  { views: '5.4M', rating: 4.9 },
+  { views: '712K', rating: 4.5 },
+  { views: '1.1M', rating: 4.6 },
+  { views: '301K', rating: 4.2 },
+  { views: '2.8M', rating: 4.8 },
+  { views: '95K', rating: 3.9 },
+  { views: '4.1M', rating: 4.9 },
+];
 
 declare global {
   interface Window {
-    fluidPlayer?: (elementId: string, options?: any) => any;
+    fluidPlayer?: (elementId: string, options?: any) => void;
   }
 }
 
-const RecentPostCard = ({ video, onClick }: { video: any, onClick: (videoId: string) => void }) => (
-    <div onClick={() => onClick(video.id)} className="group w-64 flex-shrink-0 cursor-pointer">
-      <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-black border border-gray-700 group-hover:border-blue-500 transition-all">
-        <video className="w-full h-full object-cover" preload="metadata" muted>
-          <source src={video.Url} type="video/mp4" />
-        </video>
-        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-          <FaPlay className="text-white text-4xl" />
-        </div>
-        <div className="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-md">
-          New
-        </div>
-      </div>
-      <div className="mt-2">
-        <h3 className="text-white font-medium text-sm line-clamp-2">{video.Judul}</h3>
-      </div>
-    </div>
-);
-  
-const RecentPostsView = ({ videos, onCardClick }: { videos: any[], onCardClick: (videoId: string) => void }) => (
-    <div className="mb-8">
-      <h2 className="text-2xl font-bold mb-4 text-gray-300">Recent Posts</h2>
-      <div className="flex gap-4 overflow-x-auto pb-4 -mb-4">
-        {videos.map((video) => (
-          <RecentPostCard key={video.id} video={video} onClick={onCardClick} />
-        ))}
-      </div>
-    </div>
-);
-
 export function PlayVideo() {
   const { id } = useParams<{ id: string }>();
-  const [searchParams] = useSearchParams();
-  const query = searchParams.get('search') || '';
-  const { setShowSearch } = useLayout();
-
   const [videoUrl, setVideoUrl] = useState<string>('');
-  const [blobUrl, setBlobUrl] = useState<string>(''); 
-  const [isBuffering, setIsBuffering] = useState(false); 
   const [videoTitle, setVideoTitle] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
-  const [videoFound, setVideoFound] = useState<boolean>(true);
-  const [videos, setVideos] = useState<any[]>([]);
-  const [recentVideos, setRecentVideos] = useState<any[]>([]);
-  const [filteredVideos, setFilteredVideos] = useState<any[]>([]);
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const videosPerPage = 12;
-
-  const playerInstance = useRef<any>(null);
+  const [fakeStats, setFakeStats] = useState<{ views: string; rating: number } | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false); // State untuk proses download
 
   const randomUrls = [
     'https://enviousgarbage.com/HE9TFh',
-    'https://lb.louieconurus.com/iv1GflMDYiQKXDaYJ/94691',
+    'https://mo.gatsbykynurin.com/iDo8P9Ad0aP/94691',
     'https://aviatorreproducesauciness.com/2082665',
     'https://viidedss.com/dc/?blockID=388556'
   ];
 
   useEffect(() => {
     const fetchVideoData = async () => {
-      setLoading(true);
-      setBlobUrl('');
-      setVideoFound(true);
-      setShowSearch(false); 
-
+      if (!id) {
+        setLoading(false);
+        return;
+      }
       try {
-        const response = await fetch('https://raw.githubusercontent.com/AgungDevlop/Viral/refs/heads/main/Video.json');
+        const response = await fetch(
+          'https://raw.githubusercontent.com/AgungDevlop/Viral/refs/heads/main/Video.json'
+        );
         const data = await response.json();
-        
-        setRecentVideos(data.slice(-10).reverse());
+        const video = data.find((item: { id: string }) => item.id === id);
 
-        if (id) {
-            const video = data.find((item: { id: string }) => item.id === id);
-            if (video) {
-              setShowSearch(true);
-              document.title = video.Judul;
-              setVideoUrl(video.Url); 
-              setVideoTitle(video.Judul);
-              sessionStorage.setItem('videoUrl', video.Url);
-              sessionStorage.setItem('videoTitle', video.Judul);
-
-              setIsBuffering(true);
-              try {
-                const videoResponse = await fetch(video.Url);
-                const videoBlob = await videoResponse.blob();
-                const url = URL.createObjectURL(videoBlob);
-                setBlobUrl(url);
-              } catch (e) {
-                setBlobUrl(video.Url);
-              } finally {
-                setIsBuffering(false);
-              }
-            } else {
-              setVideoFound(false);
-            }
+        if (video) {
+          document.title = video.Judul;
+          setVideoUrl(video.Url);
+          setVideoTitle(video.Judul);
+          sessionStorage.setItem('videoUrl', video.Url);
+          sessionStorage.setItem('videoTitle', video.Judul);
+          const randomIndex = Math.floor(Math.random() * fakeStatsData.length);
+          setFakeStats(fakeStatsData[randomIndex]);
+        } else {
+          setVideoTitle('Video not found');
         }
-        setVideos(shuffleArray(data));
       } catch (error) {
         console.error('Error fetching video data:', error);
+        setVideoTitle('Failed to load video');
       } finally {
         setLoading(false);
       }
     };
-    
-    if (id || query) {
-        fetchVideoData();
-    } else {
-        setLoading(false);
-    }
 
-    return () => {
-        if (blobUrl && blobUrl.startsWith('blob:')) {
-            URL.revokeObjectURL(blobUrl);
-        }
-        setShowSearch(false);
-    };
-  }, [id, query, setShowSearch]);
-  
+    fetchVideoData();
+  }, [id]);
+
   useEffect(() => {
-    if (!blobUrl) {
-      return;
-    }
-
-    // Fungsi untuk menangani event dan redirect
-    const handlePlayerEventRedirect = () => {
-        const now = new Date().getTime();
-        const lastRedirectTimestamp = sessionStorage.getItem('lastRedirectTimestamp');
-        const fifteenSeconds = 15 * 1000;
-
-        // Jika belum ada timestamp atau sudah lebih dari 15 detik
-        if (!lastRedirectTimestamp || (now - parseInt(lastRedirectTimestamp, 10)) > fifteenSeconds) {
-            const randomUrl = randomUrls[Math.floor(Math.random() * randomUrls.length)];
-            window.open(randomUrl, '_blank');
-            sessionStorage.setItem('lastRedirectTimestamp', now.toString());
+    if (!loading && videoUrl && window.fluidPlayer) {
+      window.fluidPlayer('video-player', {
+        layoutControls: {
+          controlBar: { autoHideTimeout: 3, animated: true, autoHide: true },
+          autoPlay: false,
+          mute: false,
+          allowTheatre: true,
+          playPauseAnimation: true,
+          playbackRateEnabled: true,
+          allowDownload: false,
+          playButtonShowing: true,
+          fillToContainer: true,
         }
-    };
-
-    const initPlayer = () => {
-      if (playerInstance.current) {
-        playerInstance.current.destroy();
-      }
-      if (typeof window.fluidPlayer === 'function') {
-        playerInstance.current = window.fluidPlayer('video-player', {
-          "layoutControls": {
-            "controlBar": {
-              "autoHideTimeout": 3,
-              "animated": true,
-              "autoHide": true
-            },
-            "htmlOnPauseBlock": {
-              "html": null,
-              "height": null,
-              "width": null
-            },
-            "autoPlay": false,
-            "mute": true,
-            "allowTheatre": true,
-            "playPauseAnimation": false,
-            "playbackRateEnabled": false,
-            "allowDownload": false,
-            "playButtonShowing": true,
-            "fillToContainer": false,
-            "primaryColor": "#3b82f6",
-            "posterImage": ""
-          }
-        });
-
-        // Menambahkan event listener ke instance player
-        playerInstance.current.on('play', handlePlayerEventRedirect);
-        playerInstance.current.on('pause', handlePlayerEventRedirect);
-        playerInstance.current.on('seeked', handlePlayerEventRedirect);
-      }
-    };
-    
-    const checkInterval = setInterval(() => {
-        if (typeof window.fluidPlayer === 'function') {
-            clearInterval(checkInterval);
-            initPlayer();
-        }
-    }, 100);
-
-    return () => {
-      clearInterval(checkInterval);
-      if (playerInstance.current) {
-        // .destroy() akan menghapus semua event listener yang terkait secara otomatis
-        playerInstance.current.destroy();
-        playerInstance.current = null;
-      }
-    };
-  }, [blobUrl, videoTitle]);
-
-  const shuffleArray = (array: any[]) => {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
+      });
     }
-    return array;
-  };
-
-  const handleCardClick = (videoId: string) => {
-    window.open(`/play/${videoId}`, '_blank');
-    setTimeout(() => {
-      const randomUrl = randomUrls[Math.floor(Math.random() * randomUrls.length)];
-      window.location.href = randomUrl;
-    }, 500);
-  };
+  }, [loading, videoUrl]);
 
   const handleCopy = () => {
-    if(id) {
-        navigator.clipboard.writeText(`https://${window.location.hostname}/play/${id}`);
-        alert('Video link copied to clipboard!');
-    }
+    const linkToCopy = `https://${window.location.hostname}/v/?v=${id}`;
+    navigator.clipboard.writeText(linkToCopy);
+    alert('Verification link copied to clipboard!');
   };
 
   const handleDownloadClick = () => {
-    sessionStorage.setItem('videoUrl', videoUrl); 
+    if (isDownloading || !videoUrl) return;
+
+    setIsDownloading(true);
+
+    // 1. Simpan data dan buka halaman download di tab baru
+    sessionStorage.setItem('videoUrl', videoUrl);
     sessionStorage.setItem('videoTitle', videoTitle);
     window.open('/download', '_blank');
+    
+    // 2. Redirect tab saat ini setelah 2 detik
+    const randomAdUrl = randomUrls[Math.floor(Math.random() * randomUrls.length)];
     setTimeout(() => {
-      const randomUrl = randomUrls[Math.floor(Math.random() * randomUrls.length)];
-      window.location.href = randomUrl;
-    }, 500);
+      window.location.href = randomAdUrl;
+    }, 2000);
   };
-
-  useEffect(() => {
-    const results = query 
-      ? videos.filter(video => video.Judul.toLowerCase().includes(query.toLowerCase()))
-      : id ? videos : [];
-    setFilteredVideos(results);
-    setCurrentPage(1);
-  }, [query, videos, id]);
-
-  const indexOfLastVideo = currentPage * videosPerPage;
-  const indexOfFirstVideo = indexOfLastVideo - videosPerPage;
-  const currentVideos = filteredVideos.slice(indexOfFirstVideo, indexOfLastVideo);
-  const totalPages = Math.ceil(filteredVideos.length / videosPerPage);
-
-  const handlePageChange = (pageNumber: number) => {
-    if (pageNumber >= 1 && pageNumber <= totalPages) {
-      setCurrentPage(pageNumber);
+  
+  const renderStars = (rating: number) => {
+    const stars = [];
+    for (let i = 1; i <= 5; i++) {
+      if (i <= rating) {
+        stars.push(<FaStar key={i} className="text-yellow-400" />);
+      } else if (i - 0.5 <= rating) {
+        stars.push(<FaStarHalfAlt key={i} className="text-yellow-400" />);
+      } else {
+        stars.push(<FaRegStar key={i} className="text-gray-300" />);
+      }
     }
+    return stars;
   };
 
   if (loading) {
-    return <div className="text-center p-10 text-white">Loading...</div>;
-  }
-  
-  if (id && !videoFound) {
     return (
-      <div className="flex flex-col items-center justify-center h-[60vh] text-gray-400 text-center p-4">
-        <FaExclamationTriangle size={64} className="mb-4 text-red-500" />
-        <h1 className="text-2xl font-bold text-gray-300">Video Not Found</h1>
-        <p className="mt-2 max-w-md">
-          Sorry, the video you are looking for does not exist or may have been removed.
-        </p>
-        <Link to="/" className="mt-6 inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-            Go to Homepage
-        </Link>
+      <div className="flex justify-center items-center h-screen">
+        <p className="text-lg text-gray-500">Loading video...</p>
       </div>
     );
   }
-  
-  const PlayerView = () => (
-    <div className="bg-gray-800 p-4 rounded-lg shadow-lg mb-8">
-      <h1 className="text-2xl font-bold mb-4 text-center break-words text-blue-400">{videoTitle}</h1>
-      <div className="w-full aspect-video rounded-lg overflow-hidden shadow-lg border border-gray-700 flex items-center justify-center bg-black">
-        {isBuffering && (
-            <div className='text-center text-white'>
-                <FaSpinner className="animate-spin text-4xl text-blue-400 mx-auto" />
-                <p className='mt-2'>Preparing secure video...</p>
-            </div>
-        )}
-        <video id="video-player" style={{width: '100%', height: '100%'}} key={blobUrl}>
-            <source src={blobUrl} type="video/mp4" />
-        </video>
-      </div>
-      <div className="flex mt-4 mb-4 border border-gray-700 rounded-lg overflow-hidden">
-        <input type="text" value={`https://${window.location.hostname}/play/${id}`} readOnly className="flex-1 p-3 bg-gray-900 text-white outline-none" />
-        <button onClick={handleCopy} className="bg-blue-600 hover:bg-blue-700 transition-colors text-white p-3">
-          <FaCopy />
-        </button>
-      </div>
-      <button onClick={handleDownloadClick} className="w-full bg-blue-700 hover:bg-blue-600 transition-colors text-white py-3 rounded-lg flex items-center justify-center font-semibold shadow-md">
-        <FaDownload className="mr-2" />
-        Download
-      </button>
-    </div>
-  );
-
-  const pageTitle = query ? `Search Results for "${query}"` : "More Videos";
 
   return (
-    <div className="container mx-auto max-w-6xl p-4 sm:p-6 text-white">
-      {id && videoFound && <PlayerView />}
-      
-      {id && videoFound && recentVideos.length > 0 && <RecentPostsView videos={recentVideos} onCardClick={handleCardClick} />}
+    <div className="bg-gray-50 py-6 sm:py-10">
+      <div className="container mx-auto max-w-4xl px-4">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 mb-2 text-center break-words">
+          {videoTitle}
+        </h1>
 
-      { (query || id) && (
-        <div>
-          <h2 className="text-2xl font-bold mb-4 text-gray-300">{pageTitle}</h2>
-          
-          {currentVideos.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {currentVideos.map((video) => (
-                  <div onClick={() => handleCardClick(video.id)} key={video.id} className="group transition-all cursor-pointer">
-                      <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-black border border-gray-700 group-hover:border-blue-500">
-                        <video className="w-full h-full object-cover" preload="metadata" muted>
-                            <source src={video.Url} type="video/mp4" />
-                        </video>
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <FaPlay className="text-white text-4xl" />
-                        </div>
-                      </div>
-                      <div className="mt-2">
-                        <h3 className="text-white font-medium text-sm sm:text-base line-clamp-2">{video.Judul}</h3>
-                      </div>
-                  </div>
-              ))}
+        {fakeStats && (
+          <div className="flex items-center justify-center gap-x-6 mb-4 text-gray-600">
+            <div className="flex items-center gap-x-2">
+              <FaEye />
+              <span>{fakeStats.views} Views</span>
             </div>
-          ) : (
-            <p className='text-gray-400'>
-              {query ? 'No videos found for your search.' : ''}
-            </p>
-          )}
+            <div className="flex items-center gap-x-2">
+              <div className="flex items-center">{renderStars(fakeStats.rating)}</div>
+              <span className="font-semibold">{fakeStats.rating}</span>
+            </div>
+          </div>
+        )}
 
-          {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-8">
-                <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} className="bg-gray-700 hover:bg-gray-600 transition-colors text-white py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed">
-                  Previous
-                </button>
-                <span className="text-gray-400">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages} className="bg-gray-700 hover:bg-gray-600 transition-colors text-white py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed">
-                  Next
-                </button>
-              </div>
+        <div className="w-full aspect-video bg-black rounded-lg shadow-xl overflow-hidden mb-5">
+          {videoUrl ? (
+            <video id="video-player" className="w-full h-full" controls>
+              <source src={videoUrl} type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <p className="text-white">Video not available.</p>
+            </div>
           )}
         </div>
-      )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex rounded-lg border border-gray-300 overflow-hidden shadow-sm">
+            <input
+              type="text"
+              value={`https://${window.location.hostname}/v/?v=${id}`}
+              readOnly
+              className="w-full p-3 bg-white text-gray-600 outline-none truncate"
+            />
+            <button
+              onClick={handleCopy}
+              className="bg-gray-200 hover:bg-gray-300 text-gray-700 p-4 transition-colors"
+            >
+              <FaCopy />
+            </button>
+          </div>
+
+          <button
+            onClick={handleDownloadClick}
+            disabled={!videoUrl || isDownloading}
+            className="w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-white py-3 px-4 rounded-lg flex items-center justify-center font-semibold shadow-md text-lg"
+          >
+            {isDownloading ? (
+              <>
+                <FaSpinner className="animate-spin mr-3" />
+                Processing...
+              </>
+            ) : (
+              <>
+                <FaDownload className="mr-3" />
+                Download Video
+              </>
+            )}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
