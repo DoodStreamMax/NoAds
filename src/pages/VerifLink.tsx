@@ -8,10 +8,10 @@ export const VerifLink: React.FC = () => {
   const videoId = searchParams.get('v');
 
   const adUrls = [
+    'https://otieu.com/4/10055984',
     'https://enviousgarbage.com/HE9TFh',
-    'https://mo.gatsbykynurin.com/iDo8P9Ad0aP/94691',
-    'https://aviatorreproducesauciness.com/2082665',
-    'https://viidedss.com/dc/?blockID=388556'
+    'https://viikqoye.com/dc/?blockID=388556',
+    'https://categorysoloist.com/uyn55j734?key=6215083a0cad61022fb25eeca740099d'
   ];
 
   const getRandomAdUrl = () => {

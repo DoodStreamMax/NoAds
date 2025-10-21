@@ -9,12 +9,18 @@ import { PlayVideo } from "./pages/PlayVideo.tsx";
 import { Download } from "./pages/Download.tsx";
 import Redirect from "./pages/Redirect.tsx";
 import { VerifLink } from "./pages/VerifLink.tsx";
+import { Home } from "./pages/Home.tsx"; // 1. Impor komponen Home yang baru
 
 const router = createBrowserRouter([
   {
     path: "/",
     element: <App />,
     children: [
+      // 2. Tambahkan rute baru untuk halaman unggah
+      {
+        path: "/",
+        element: <Home />,
+      },
       {
         path: ":id",
         element: <PlayVideo />,
