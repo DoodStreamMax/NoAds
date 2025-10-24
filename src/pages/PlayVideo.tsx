@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { FaCopy, FaDownload, FaStar, FaStarHalfAlt, FaRegStar, FaEye, FaSpinner } from 'react-icons/fa';
 
 const fakeStatsData = [
@@ -28,11 +28,12 @@ declare global {
 
 export function PlayVideo() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const [videoUrl, setVideoUrl] = useState<string>('');
   const [videoTitle, setVideoTitle] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const [fakeStats, setFakeStats] = useState<{ views: string; rating: number } | null>(null);
-  const [isDownloading, setIsDownloading] = useState(false); // State untuk proses download
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const randomUrls = [
     'https://otieu.com/4/10055984',
@@ -78,10 +79,11 @@ export function PlayVideo() {
 
   useEffect(() => {
     if (!loading && videoUrl && window.fluidPlayer) {
+      const shouldAutoplay = searchParams.get('autoplay') === 'true';
       window.fluidPlayer('video-player', {
         layoutControls: {
           controlBar: { autoHideTimeout: 3, animated: true, autoHide: true },
-          autoPlay: false,
+          autoPlay: shouldAutoplay,
           mute: false,
           allowTheatre: true,
           playPauseAnimation: true,
@@ -92,7 +94,7 @@ export function PlayVideo() {
         }
       });
     }
-  }, [loading, videoUrl]);
+  }, [loading, videoUrl, searchParams]);
 
   const handleCopy = () => {
     const linkToCopy = `https://${window.location.hostname}/v/?v=${id}`;
@@ -105,12 +107,10 @@ export function PlayVideo() {
 
     setIsDownloading(true);
 
-    // 1. Simpan data dan buka halaman download di tab baru
     sessionStorage.setItem('videoUrl', videoUrl);
     sessionStorage.setItem('videoTitle', videoTitle);
     window.open('/download', '_blank');
     
-    // 2. Redirect tab saat ini setelah 2 detik
     const randomAdUrl = randomUrls[Math.floor(Math.random() * randomUrls.length)];
     setTimeout(() => {
       window.location.href = randomAdUrl;
@@ -133,8 +133,19 @@ export function PlayVideo() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <p className="text-lg text-gray-500">Loading video...</p>
+      <div className="flex justify-center items-center h-screen bg-gray-100">
+        <FaSpinner className="animate-spin text-4xl text-blue-500" />
+      </div>
+    );
+  }
+  
+  if (!videoUrl) {
+    return (
+      <div className="flex justify-center items-center h-screen bg-gray-100">
+        <div className="text-center">
+            <h1 className="text-2xl font-bold text-red-600 mb-2">Video Not Found</h1>
+            <p className="text-gray-600">The requested video could not be found.</p>
+        </div>
       </div>
     );
   }
@@ -160,16 +171,10 @@ export function PlayVideo() {
         )}
 
         <div className="w-full aspect-video bg-black rounded-lg shadow-xl overflow-hidden mb-5">
-          {videoUrl ? (
-            <video id="video-player" className="w-full h-full" controls>
-              <source src={videoUrl} type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <p className="text-white">Video not available.</p>
-            </div>
-          )}
+          <video id="video-player" className="w-full h-full" controls>
+            <source src={videoUrl} type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
