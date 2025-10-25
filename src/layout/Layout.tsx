@@ -13,7 +13,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           <h1 className="text-xl font-bold">No Ads Stream</h1>
         </div>
         <a
-          href="/upload.html"
+          href="https://viplay.top"
           className="bg-black text-white px-4 py-2 rounded-md flex items-center space-x-2 hover:bg-gray-800 transition-colors"
           target="_blank"
           rel="noopener noreferrer"
