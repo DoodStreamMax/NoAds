@@ -15,7 +15,7 @@ export const VerifLink: React.FC = () => {
     'https://otieu.com/4/10055984',
     'https://enviousgarbage.com/HE9TFh',
     'https://viikqoye.com/dc/?blockID=388556',
-    'https://stinafulltiukmep.org?2Lsef=1221171'
+    'https://www.effectivegatecpm.com/prwqm03pu?key=61675b93ab30cd18f539463a4709b103'
   ];
 
   const getRandomAdUrl = () => {
