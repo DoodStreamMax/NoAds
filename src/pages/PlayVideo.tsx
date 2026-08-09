@@ -37,7 +37,7 @@ export function PlayVideo() {
 
   const randomUrls = [
     'https://dulyhagglermounting.com/2082665',
-    'https://wwp.giriucat.com/redirect-zone/5137a848'
+    'https://sorrowfulpsychology.com/HE9TFh'
   ];
 
   useEffect(() => {
